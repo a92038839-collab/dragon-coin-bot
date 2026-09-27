@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    >
+
+    <title>Dragon Coin</title>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app">
+
+        <header>
+            <h1>🐉 Dragon Coin</h1>
+            <div id="username">👤 Player</div>
+        </header>
+
+        <div class="balance-box">
+            <div class="balance-title">BALANS</div>
+            <div id="coins">0 🪙</div>
+        </div>
+
+        <main>
+            <button id="dragon" onclick="tapCoin(event)">
+                🐉
+            </button>
+
+            <p class="tap-text">
+                Dragon'ga bosib coin yig‘ing!
+            </p>
+        </main>
+
+        <nav>
+            <button>🐉<span>Coin</span></button>
+            <button>🏆<span>Reyting</span></button>
+            <button>🛒<span>Auktsion</span></button>
+            <button>👤<span>Profil</span></button>
+        </nav>
+
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
