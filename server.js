@@ -15,9 +15,10 @@ const pool = new Pool({
     }
 });
 
-// Database yaratish
 async function initDatabase() {
     try {
+
+        // Jadval bo'lmasa yaratadi
         await pool.query(`
             CREATE TABLE IF NOT EXISTS users (
                 id BIGINT PRIMARY KEY,
@@ -29,17 +30,33 @@ async function initDatabase() {
             )
         `);
 
-        console.log("Database tayyor!");
+        // Eski INTEGER bo'lsa BIGINT ga o'tkazadi
+        await pool.query(`
+            ALTER TABLE users
+            ALTER COLUMN id TYPE BIGINT
+            USING id::BIGINT
+        `);
+
+        // coins ham katta sonlarni qabul qilsin
+        await pool.query(`
+            ALTER TABLE users
+            ALTER COLUMN coins TYPE BIGINT
+            USING coins::BIGINT
+        `);
+
+        console.log("✅ Database tayyor!");
+
     } catch (error) {
-        console.error("Database xatosi:", error);
+        console.error("❌ Database xatosi:", error);
     }
 }
 
-initDatabase();
 
-// Foydalanuvchini olish/yaratish
+// USER
 app.post("/api/user", async (req, res) => {
+
     try {
+
         const {
             id,
             username,
@@ -53,16 +70,31 @@ app.post("/api/user", async (req, res) => {
         }
 
         let result = await pool.query(
-            "SELECT * FROM users WHERE id = $1",
-            [id]
+            `SELECT * FROM users WHERE id = $1`,
+            [id.toString()]
         );
 
         if (result.rows.length === 0) {
 
-            const promoCode = Math.random()
-                .toString(36)
-                .substring(2, 7)
-                .toUpperCase();
+            let promoCode;
+
+            // Takrorlanmaydigan 5 belgili kod
+            while (true) {
+
+                promoCode = Math.random()
+                    .toString(36)
+                    .substring(2, 7)
+                    .toUpperCase();
+
+                const check = await pool.query(
+                    `SELECT id FROM users WHERE promo_code = $1`,
+                    [promoCode]
+                );
+
+                if (check.rows.length === 0) {
+                    break;
+                }
+            }
 
             result = await pool.query(
                 `
@@ -72,7 +104,7 @@ app.post("/api/user", async (req, res) => {
                 RETURNING *
                 `,
                 [
-                    id,
+                    id.toString(),
                     username || "",
                     first_name || "",
                     promoCode
@@ -80,20 +112,28 @@ app.post("/api/user", async (req, res) => {
             );
         }
 
-        res.json(result.rows[0]);
+        res.json({
+            id: result.rows[0].id,
+            username: result.rows[0].username,
+            first_name: result.rows[0].first_name,
+            coins: Number(result.rows[0].coins),
+            promo_code: result.rows[0].promo_code
+        });
 
     } catch (error) {
 
-        console.error(error);
+        console.error("USER ERROR:", error);
 
         res.status(500).json({
-            error: "Server xatosi"
+            error: "User server xatosi"
         });
     }
 });
 
-// Coin qo'shish
+
+// TAP
 app.post("/api/tap", async (req, res) => {
+
     try {
 
         const { id } = req.body;
@@ -111,31 +151,34 @@ app.post("/api/tap", async (req, res) => {
             WHERE id = $1
             RETURNING coins
             `,
-            [id]
+            [id.toString()]
         );
 
         if (result.rows.length === 0) {
+
             return res.status(404).json({
                 error: "User topilmadi"
             });
         }
 
         res.json({
-            coins: result.rows[0].coins
+            coins: Number(result.rows[0].coins)
         });
 
     } catch (error) {
 
-        console.error(error);
+        console.error("TAP ERROR:", error);
 
         res.status(500).json({
-            error: "Server xatosi"
+            error: "Coin qo'shishda xato"
         });
     }
 });
 
-// Reyting
+
+// RATING
 app.get("/api/rating", async (req, res) => {
+
     try {
 
         const result = await pool.query(`
@@ -154,7 +197,7 @@ app.get("/api/rating", async (req, res) => {
 
     } catch (error) {
 
-        console.error(error);
+        console.error("RATING ERROR:", error);
 
         res.status(500).json({
             error: "Rating xatosi"
@@ -162,15 +205,21 @@ app.get("/api/rating", async (req, res) => {
     }
 });
 
-// Asosiy sahifa
+
+// HOME
 app.get("/", (req, res) => {
+
     res.sendFile(
         path.join(__dirname, "public", "index.html")
     );
+
 });
 
+
 app.listen(PORT, () => {
+
     console.log(
-        `Dragon Coin running on port ${PORT}`
+        `🐉 Dragon Coin running on port ${PORT}`
     );
+
 });
