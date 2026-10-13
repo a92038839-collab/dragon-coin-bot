@@ -1,2 +1,0 @@
-# dragon-coin-bot
-dragon 
